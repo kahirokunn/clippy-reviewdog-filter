@@ -6,53 +6,35 @@ on:
     tags: ["v*"]
 
 jobs:
-  build-arm64-linux:
+  build-linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [aarch64-unknown-linux-gnu]
+        target:
+        - aarch64-unknown-linux-gnu
+        - x86_64-unknown-linux-musl
+        - i686-unknown-linux-musl
 
     steps:
+    - run: |
+        uname -m
     - uses: actions/checkout@v2
     - name: Install toolchain
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Add targets
-      run:  |
-        rustup target add aarch64-unknown-linux-gnu
-    - name: Build for Linux (aarch64)
-      run: cargo build --release --target=aarch64-unknown-linux-gnu --locked
+        profile: minimal
+        override: true
+        target: ${{ matrix.target }}
+    - name: Build target
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target ${{ matrix.target }} --locked
     - run: |
         mkdir -p dist
-        cp target/aarch64-unknown-linux-gnu/release/clippy-reviewdog-filter dist/clippy-reviewdog-filter-aarch64-unknown-linux-gnu
-    - name: Upload artifacts for release
-      uses: actions/upload-artifact@v2
-      with:
-        path: dist
-        if-no-files-found: error
-
-  build-linux:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-    - name: Add targets
-      run:  |
-        rustup target add x86_64-unknown-linux-musl
-        rustup target add i686-unknown-linux-musl
-    - name: Build for Linux (x86_64)
-      run: cargo build --release --target x86_64-unknown-linux-musl --locked
-    - name: Build for Linux (x86)
-      run: cargo build --release --target i686-unknown-linux-musl --locked
-    - run: |
-        mkdir -p dist
-        cp target/x86_64-unknown-linux-musl/release/clippy-reviewdog-filter dist/clippy-reviewdog-filter-x86_64-unknown-linux-musl
-        cp target/i686-unknown-linux-musl/release/clippy-reviewdog-filter dist/clippy-reviewdog-filter-i686-unknown-linux-musl
+        cp target/${{ matrix.target }}/release/clippy-reviewdog-filter dist/clippy-reviewdog-filter-${{ matrix.target }}
     - name: Upload artifacts for release
       uses: actions/upload-artifact@v2
       with:
