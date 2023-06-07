@@ -13,19 +13,25 @@ jobs:
         target: [aarch64-unknown-linux-gnu]
 
     steps:
+    - run: |
+        uname -m
     - uses: actions/checkout@v2
     - name: Install toolchain
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Add targets
-      run:  |
-        rustup target add aarch64-unknown-linux-gnu
-    - name: Build for Linux (aarch64)
-      run: cargo build --release --target=aarch64-unknown-linux-gnu --locked
+        profile: minimal
+        override: true
+        target: ${{ matrix.target }}
+    - name: Build target
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target ${{ matrix.target }} --locked
     - run: |
         mkdir -p dist
-        cp target/aarch64-unknown-linux-gnu/release/clippy-reviewdog-filter dist/clippy-reviewdog-filter-aarch64-unknown-linux-gnu
+        cp target/${{ matrix.target }}/release/clippy-reviewdog-filter dist/clippy-reviewdog-filter-${{ matrix.target }}
     - name: Upload artifacts for release
       uses: actions/upload-artifact@v2
       with:
